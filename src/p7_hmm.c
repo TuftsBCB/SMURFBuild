@@ -109,6 +109,8 @@ p7_hmm_CreateShell(void)
   hmm->offset   = 0;
   hmm->flags    = 0;
   hmm->abc      = NULL;
+  hmm->nbetaPairs = 0;
+  hmm->betaPairs = 0;
   return hmm;
 
  ERROR:
@@ -213,6 +215,8 @@ p7_hmm_Destroy(P7_HMM *hmm)
   if (hmm->comlog  != NULL) free(hmm->comlog);
   if (hmm->ctime   != NULL) free(hmm->ctime);
   if (hmm->map     != NULL) free(hmm->map);
+  
+  if (hmm->betaPairs != NULL) free(hmm->betaPairs);
 
   free(hmm);
   return;

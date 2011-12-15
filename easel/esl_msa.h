@@ -30,6 +30,15 @@
 #define eslMSA_NCUTS   6
 /*::cexcerpt::msa_cutoffs::end::*/
 
+/* Object: BETA_PAIR
+ * Holds a pair of H-bonded beta strands
+ */
+typedef struct beta_pair_struct {
+  int s1, s2;
+  int len, maxGap, antiparallel;
+  char types[40];
+} BETA_PAIR;
+
 /* Object: ESL_MSA
  * 
  * A multiple sequence alignment.
@@ -128,6 +137,9 @@ typedef struct {
 #ifdef eslAUGMENT_SSI
   off_t         offset;		/* disk offset to start of 1st line of this MSA's record */
 #endif
+  // Added consensus beta strand alignment info.
+  BETA_PAIR *betaPairs;
+  int nbetaPairs;
 } ESL_MSA;
 
 

@@ -457,6 +457,10 @@ p7_hmmfile_WriteASCII(FILE *fp, int format, P7_HMM *hmm)
       }
     }
 
+    for (x = 0; x<hmm->nbetaPairs; x++) {
+      fprintf(fp, "BETA  %i %i %i %i %i %s\n", hmm->betaPairs[x].s1, hmm->betaPairs[x].s2, hmm->betaPairs[x].len, hmm->betaPairs[x].maxGap, hmm->betaPairs[x].antiparallel, hmm->betaPairs[x].types);
+    }
+
   fprintf(fp, "HMM     ");
   for (x = 0; x < hmm->abc->K; x++) fprintf(fp, "     %c   ", hmm->abc->sym[x]);
   fputc('\n', fp);

@@ -212,6 +212,8 @@ create_mostly(int nseq, int64_t alen)
       msa->wgt[i]    = -1.0;	/* "unset so far" */
     }
 
+  msa->nbetaPairs = 0;
+  msa->betaPairs = 0;
   return msa;
 
  ERROR:
@@ -960,7 +962,8 @@ esl_msa_Destroy(ESL_MSA *msa)
   esl_keyhash_Destroy(msa->gc_idx);
   esl_keyhash_Destroy(msa->gr_idx);
 #endif /* keyhash augmentation */  
-
+  
+  if (msa->betaPairs) free(msa->betaPairs);
   free(msa);
   return;
 }
@@ -3719,6 +3722,29 @@ parse_gr(ESL_MSA *msa, char *buf)
   return status;
 }
 
+/* parse_beta():
+ * Format of a BETA line:
+ *    #=BETA <s1> <s2> <len> <max gap> <anti-parallel> <buried/exposed list>
+ */
+static int
+parse_beta(ESL_MSA *msa, char *buf) {
+  BETA_PAIR *p;
+  char string[1000];
+  void *tmp;
+  int status = eslOK;
+  if (!(msa->nbetaPairs%16)) {
+          ESL_RALLOC(msa->betaPairs, tmp, (msa->nbetaPairs+16) * sizeof(BETA_PAIR));
+  }
+  p = msa->betaPairs + msa->nbetaPairs;
+  if (sscanf(buf+6, " %i %i %i %i %i %s", &p->s1, &p->s2, &p->len, &p->maxGap, &p->antiparallel, string) != 6) goto ERROR;
+  if (p->len > 39 || strlen(string) != p->len) goto ERROR;
+  memcpy(p->types, string, 40);
+  msa->nbetaPairs++;
+  return status;
+
+ ERROR:
+  return status;
+}
 
 /* parse_comment():
  * comments are simply stored verbatim, not parsed
@@ -3875,6 +3901,11 @@ read_stockholm(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
 	    if ((status = parse_gr(msa, s)) != eslOK)
 	      ESL_XFAIL(status, afp->errbuf, "parse failed (line %d): bad #=GR line", afp->linenumber);
 	  }
+  else if (strncmp(s, "#=BETA", 6) == 0)
+    {
+      if ((status = parse_beta(msa, s)) != eslOK)
+        ESL_XFAIL(status, afp->errbuf, "parse failed (line %d): bad #=BETA line", afp->linenumber);
+    }
 
 	else if ((status = parse_comment(msa, s)) != eslOK)
 	  ESL_XFAIL(status, afp->errbuf, "parse failed (line %d): bad comment line", afp->linenumber);

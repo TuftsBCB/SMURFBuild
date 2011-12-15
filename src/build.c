@@ -234,6 +234,41 @@ matassign2hmm(ESL_MSA *msa, int *matassign, P7_HMM **ret_hmm, P7_TRACE ***opt_tr
   int      idx;                 /* counter over sequences              */
   int      apos;                /* counter for aligned columns         */
   char errbuf[eslERRBUFSIZE];
+  /* SMURF support */
+  BETA_PAIR *betaPairs = 0;
+  if (msa->nbetaPairs) {
+  	  int strand;
+  	  ESL_ALLOC(betaPairs, msa->nbetaPairs * sizeof(BETA_PAIR));
+  	  for (strand=0; strand<msa->nbetaPairs; strand++) {
+  		  BETA_PAIR *src = &msa->betaPairs[strand];
+  		  for (apos = 1; apos <= msa->alen; apos++) {
+  			  if (src->s1 <= apos && apos < src->s1+src->len) {
+  				  matassign[apos] = TRUE;
+  			  }
+  			  if (src->s2 <= apos && apos < src->s2+src->len) {
+  				  matassign[apos] = TRUE;
+  			  }
+  		  }
+  	  }
+  	  for (strand=0; strand<msa->nbetaPairs; strand++) {
+  		  int M = 0;
+  		  BETA_PAIR *dst = &betaPairs[strand];
+  		  BETA_PAIR *src = &msa->betaPairs[strand];
+  		  *dst = *src;
+  		  for (apos = 1; apos <= msa->alen; apos++) {
+  			  if (matassign[apos]) {
+  				  M++;
+  				  if (src->s1 <= apos && apos < src->s1+src->len) {
+  					  if (src->s1 == apos) dst->s1 = M;
+  				  }
+  				  if (src->s2 <= apos && apos < src->s2+src->len) {
+  					  if (src->s2 == apos) dst->s2 = M;
+  				  }
+  			  }
+  		  }
+  	  }
+  }
+  
 
   /* How many match states in the HMM? */
   for (M = 0, apos = 1; apos <= msa->alen; apos++) 
@@ -252,6 +287,8 @@ matassign2hmm(ESL_MSA *msa, int *matassign, P7_HMM **ret_hmm, P7_TRACE ***opt_tr
 
   /* Build count model from tracebacks */
   if ((hmm    = p7_hmm_Create(M, msa->abc)) == NULL)  { status = eslEMEM; goto ERROR; }
+  hmm->betaPairs = betaPairs;
+  hmm->nbetaPairs = msa->nbetaPairs;
   if ((status = p7_hmm_Zero(hmm))           != eslOK) goto ERROR;
   for (idx = 0; idx < msa->nseq; idx++) {
     if (tr[idx] == NULL) continue; /* skip rare examples of empty sequences */
@@ -281,6 +318,7 @@ matassign2hmm(ESL_MSA *msa, int *matassign, P7_HMM **ret_hmm, P7_TRACE ***opt_tr
  ERROR:
   if (tr     != NULL) p7_trace_DestroyArray(tr, msa->nseq);
   if (hmm    != NULL) p7_hmm_Destroy(hmm);
+  else if (betaPairs) free(betaPairs);
   if (opt_tr != NULL) *opt_tr = NULL;
   *ret_hmm = NULL;
   return status;
