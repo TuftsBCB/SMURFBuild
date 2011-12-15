@@ -184,6 +184,8 @@ typedef struct p7_hmm_s {
   off_t    offset;               /* HMM record offset on disk                              */
   const ESL_ALPHABET *abc;       /* ptr to alphabet info (hmm->abc->K is alphabet size)    */
   int      flags;                /* status flags                                           */
+  BETA_PAIR *betaPairs;
+  int nbetaPairs;
 } P7_HMM;
 
 
